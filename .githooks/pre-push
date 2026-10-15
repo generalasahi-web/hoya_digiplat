@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+allow_protected_push() {
+  if [ "${ALLOW_PROTECTED_PUSH:-}" = "1" ]; then
+    return 0
+  fi
+
+  if [ "$(git config --bool hooks.allowProtectedPush 2>/dev/null || printf 'false')" = "true" ]; then
+    return 0
+  fi
+
+  return 1
+}
+
+protected_branches_raw="$(git config --get hooks.protectedBranches 2>/dev/null || true)"
+if [ -z "$protected_branches_raw" ]; then
+  protected_branches_raw="main develop"
+fi
+
+IFS=' ' read -r -a protected_branches <<< "$protected_branches_raw"
+
+is_protected_branch() {
+  local branch="$1"
+  local protected
+  for protected in "${protected_branches[@]}"; do
+    if [ -n "$protected" ] && [ "$branch" = "$protected" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$local_ref" in
+    refs/heads/*)
+      branch="${local_ref#refs/heads/}"
+      ;;
+    *)
+      continue
+      ;;
+  esac
+
+  if is_protected_branch "$branch" && ! allow_protected_push; then
+    cat <<EOF
+
+保護ブランチ ${branch} への push は既定で止めています。
+承認済みの最終反映だけ、次のどちらかで一時的に許可してください。
+
+  ALLOW_PROTECTED_PUSH=1 git push ...
+  git config hooks.allowProtectedPush true
+
+push 後に git config を使った場合は、必ず解除してください。
+
+  git config --unset hooks.allowProtectedPush
+
+EOF
+    exit 1
+  fi
+done
+
+exit 0

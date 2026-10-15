@@ -1,0 +1,37 @@
+# Claude / Codex local settings
+.claude/settings.local.json
+.claude/commands/local/
+.claude/hooks/local/
+.claude/*.log
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+basic-info.md
+基本情報.md
+doc/basic-info.md
+doc/基本情報.md
+
+# Local outputs
+_deploy_backups/
+_remote_sync/
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
+
+# Common build outputs
+node_modules/
+dist/
+build/
+coverage/
+.next/
+out/
+__pycache__/
+*.pyc

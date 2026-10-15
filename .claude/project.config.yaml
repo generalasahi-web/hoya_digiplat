@@ -1,0 +1,43 @@
+# Git 管理してよい基本情報だけを書く
+# 接続パスワードや秘密鍵の実体は書かない
+
+project:
+  name: "案件名"
+  slug: ""
+  client: "クライアント名"
+  client_slug: ""
+  type: ""
+
+repository:
+  provider: "github"
+  owner_type: "organization"
+  owner_name: "generalasahi-web"
+  protocol: "ssh"
+  repo_name: ""
+  naming_rule: "prod_url から www. と TLD を除いた文字列。サブドメインがあれば [サブドメイン]-[ドメイン]。重複時は [リポジトリ名]-[案件種別]"
+  description: ""
+  description_rule: "<client> <project-name>"
+  remote_url: ""
+  visibility: "private"
+  ensure_remote_repo: true
+  default_branch: "main"
+  integration_branch: "develop"
+  create_initial_commit: true
+  initial_commit_message: "プロジェクトの初期ファイルを追加"
+  push_after_init: true
+
+environment:
+  prod_url: ""
+  stg_url: ""
+  local_url: ""
+
+deployment:
+  method: ""
+  default_target: ""
+  deploy_script: ".scripts/deploy-project.sh"
+  sync_script: ".scripts/sync-project.sh"
+  rollback_script: ".scripts/rollback-project.sh"
+  backup_before_deploy: true
+  backup_dir: "_deploy_backups"
+  backup_retention: "10"
+  notes: ""

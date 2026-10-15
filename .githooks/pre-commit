@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+allow_protected_commit() {
+  if [ "${ALLOW_PROTECTED_COMMIT:-}" = "1" ] || [ "${ALLOW_PROTECTED_BRANCH_OPS:-}" = "1" ]; then
+    return 0
+  fi
+
+  if [ "$(git config --bool hooks.allowProtectedCommit 2>/dev/null || printf 'false')" = "true" ]; then
+    return 0
+  fi
+
+  if [ "$(git config --bool hooks.allowProtectedBranchOps 2>/dev/null || printf 'false')" = "true" ]; then
+    return 0
+  fi
+
+  return 1
+}
+
+protected_branches_raw="$(git config --get hooks.protectedBranches 2>/dev/null || true)"
+if [ -z "$protected_branches_raw" ]; then
+  protected_branches_raw="main develop"
+fi
+
+IFS=' ' read -r -a protected_branches <<< "$protected_branches_raw"
+
+is_protected_branch() {
+  local branch="$1"
+  local protected
+  for protected in "${protected_branches[@]}"; do
+    if [ -n "$protected" ] && [ "$branch" = "$protected" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+current_branch="$(git branch --show-current 2>/dev/null || true)"
+if [ -z "$current_branch" ]; then
+  exit 0
+fi
+
+# --- シークレット検出 ---
+staged_files="$(git diff --cached --name-only --diff-filter=ACM || true)"
+if [ -n "$staged_files" ]; then
+  for f in $staged_files; do
+    # ファイル名パターン
+    if echo "$f" | grep -qiE '\.(env|pem|key|p12|pfx|jks|keystore)$|credential|secret'; then
+      cat <<EOF
+
+機密情報の可能性があるファイルがステージされています: $f
+Git 管理対象にすべきか確認してください。
+.gitignore に追加するか、.env.local に移してください。
+
+EOF
+      exit 1
+    fi
+    # ファイル内容パターン（新規追加・変更行のみ）
+    # シェル変数参照 ${...} の行（テンプレート・プレースホルダー）は除外する
+    if git diff --cached -- "$f" \
+      | grep -iE '(api[_-]?key|password|passwd|secret[_-]?key|access[_-]?token|private[_-]?key)\s*[:=]' \
+      | grep -qvE '[:=][[:space:]]*("|'"'"')?\$\{'; then
+      cat <<EOF
+
+機密情報がコミットに含まれている可能性があります: $f
+パスワードや API キーが含まれていないか確認してください。
+機密情報は .env.local に移してください。
+
+EOF
+      exit 1
+    fi
+  done
+fi
+
+if is_protected_branch "$current_branch" && ! allow_protected_commit; then
+  cat <<EOF
+
+保護ブランチ ${current_branch} 上での commit は既定で止めています。
+承認済みの最終反映だけ、次のどちらかで一時的に許可してください。
+
+  ALLOW_PROTECTED_COMMIT=1 git commit ...
+  ALLOW_PROTECTED_BRANCH_OPS=1 git merge ...
+  git config hooks.allowProtectedCommit true
+
+一時設定を使った場合は、作業後に解除してください。
+
+  git config --unset hooks.allowProtectedCommit
+  git config --unset hooks.allowProtectedBranchOps
+
+EOF
+  exit 1
+fi
+
+exit 0

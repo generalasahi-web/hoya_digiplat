@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+commit_msg_file="${1:-}"
+commit_msg="$(head -1 "$commit_msg_file" | tr -d '\r')"
+
+if echo "$commit_msg" | grep -qE "^(Merge|Revert) "; then
+  exit 0
+fi
+
+if [ -z "$commit_msg" ]; then
+  cat <<'EOF'
+
+コミットメッセージが空です。
+1行目に「何をしたか」が分かる具体的な日本語を書いてください。
+
+例:
+  トップページのヘッダー画像を新デザインに差し替え
+  スタッフ紹介ページの誤字を修正
+
+EOF
+  exit 1
+fi
+
+if echo "$commit_msg" | grep -qE "^(WIP|wip)(:|$)"; then
+  cat <<'EOF'
+
+`WIP` だけのコミットメッセージは避けてください。
+作業途中でも「何をしたか」が分かる具体的な説明を書いてください。
+
+EOF
+  exit 1
+fi
+
+if echo "$commit_msg" | grep -qE "^(修正|変更|更新|fix|update|いろいろ変更|いろいろ直した|今日の修正)$"; then
+  cat <<'EOF'
+
+コミットメッセージが曖昧です。
+「何を」「どう変えたか」が分かる表現にしてください。
+
+例:
+  お問い合わせフォームの送信ボタンの色を青に変更
+  商品詳細ページのレイアウト崩れをスマホ表示で修正
+
+EOF
+  exit 1
+fi
+
+char_count="$(printf '%s' "$commit_msg" | wc -m | tr -d ' ')"
+if [ "$char_count" -gt 72 ]; then
+  cat <<EOF
+
+コミットメッセージが長すぎます（${char_count}文字 / 目安72文字）。
+1行目は短くまとめ、必要なら詳細は本文に書いてください。
+
+EOF
+  exit 1
+fi
+
+exit 0

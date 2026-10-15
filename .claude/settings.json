@@ -1,0 +1,64 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pwd)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(sed *)",
+      "Bash(rg *)",
+      "Bash(find *)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git log:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git config:*)",
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh repo view:*)",
+      "Bash(python3 .scripts/project_config.py:*)",
+      "Bash(python3 .scripts/repository_meta.py:*)",
+      "Bash(python3 .scripts/project_survey.py:*)",
+      "Bash(bash .scripts/check-branch-sync.sh:*)",
+      "Bash(bash .scripts/init-local-env.sh:*)",
+      "Bash(bash .scripts/create-github-repo.sh:*)",
+      "Bash(bash .scripts/init-repo.sh:*)",
+      "Bash(bash .scripts/bootstrap.sh:*)",
+      "Bash(bash .scripts/deploy.sh:*)",
+      "Bash(bash .scripts/rollback.sh:*)",
+      "Bash(bash .scripts/doctor.sh:*)",
+      "Bash(bash .scripts/sync-from-server.sh:*)",
+      "Read(**)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git commit -n:*)"
+    ],
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh repo create:*)",
+      "Bash(gh repo edit:*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f MEMORY.md ] && grep -q '^### ' MEMORY.md 2>/dev/null; then echo '\\n[Session End] MEMORY.md に作業メモがあります。確定事項は CLAUDE.md や既存ドキュメントへ移してください。'; fi; true"
+          }
+        ]
+      }
+    ]
+  }
+}
